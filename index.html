@@ -76,7 +76,7 @@ h3{font-size:15px;font-weight:700;margin:0 0 8px;letter-spacing:.02em;}
 .btn.sec{background:var(--card);color:var(--ink);border:1px solid var(--line);}
 .btn.full{width:100%;}
 .btn.sm{padding:7px 12px;font-size:13px;border-radius:10px;}
-.btn.danger{background:#fff;color:var(--protein);border:1px solid var(--line);}
+.btn.danger{background:#fff;color:var(--protein);border:1px solid var(--line);}\n.btn:disabled{opacity:.5;cursor:default;}
 .btnrow{display:flex;gap:10px;margin-top:12px;}
 .btnrow .btn{flex:1;}
 /* list rows (foods/recipes) */
@@ -166,7 +166,7 @@ label.fl{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margi
   <div class="card" style="margin-top:12px">
     <h3>Foods <span class="muted small" style="font-weight:400">(per weighed amount)</span></h3>
     <div id="foodList"></div>
-    <div class="btnrow"><button class="btn sec" onclick="uiScan()">Scan a label</button><button class="btn sec" onclick="uiNewFood()">Add manually</button></div>
+    <div class="btnrow"><button class="btn sec" onclick="uiScan()">Scan a label</button><button class="btn sec" onclick="uiNewFood()">Add manually</button></div>\n    <button class="btn sec full" style="margin-top:10px" onclick="uiLibrary()">Browse the starter library</button>
   </div>
   <div class="card">
     <h3>Meals & preps <span class="muted small" style="font-weight:400">(logged by portion)</span></h3>
@@ -255,7 +255,7 @@ label.fl{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margi
 <div class="sheet" id="addSheet">
   <h3>Add to today</h3>
   <button class="action" onclick="uiScan()"><span class="ic" style="background:var(--green-soft);color:var(--green)"><svg viewBox="0 0 24 24"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M7 12h10"/></svg></span><span>Scan a nutrition label<span class="sub">Photo → auto-fill → quick check → saved</span></span></button>
-  <button class="action" onclick="uiPickFood()"><span class="ic" style="background:var(--carbs-soft);color:var(--carbs)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span>Log a food by grams<span class="sub">From your saved foods</span></span></button>
+  <button class="action" onclick="uiPickFood()"><span class="ic" style="background:var(--carbs-soft);color:var(--carbs)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span>Log a food by grams<span class="sub">Your foods + built-in library of whole foods</span></span></button>
   <button class="action" onclick="uiPickRecipe()"><span class="ic" style="background:var(--protein-soft);color:var(--protein)"><svg viewBox="0 0 24 24"><path d="M4 11h16M6 11a6 6 0 0 1 12 0M9 8V6M12 7V5M15 8V6M4 11l1.5 8h13L20 11"/></svg></span><span>Log meal-prep portions<span class="sub">e.g. 1 portion = ⅕ of the batch</span></span></button>
   <button class="action" onclick="uiNewRecipe()"><span class="ic" style="background:var(--fat-soft);color:var(--fat)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/></svg></span><span>Build a meal<span class="sub">Combine foods — yogurt + fruit + honey</span></span></button>
   <button class="action" onclick="uiQuickAdd()"><span class="ic" style="background:var(--bg);color:var(--muted)"><svg viewBox="0 0 24 24"><path d="M4 20l14-14M15 3l6 6-9 9H6v-6z"/></svg></span><span>Quick add<span class="sub">Type calories and macros directly</span></span></button>
@@ -276,6 +276,166 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const r0=n=>Math.round(n||0);
 const r1=n=>Math.round((n||0)*10)/10;
+/* ---------- starter food library (typical values per 100 g, USDA/CNF) ---------- */
+const CATS=['Protein','Fish & seafood','Dairy & eggs','Vegetables','Fruits','Grains & starches','Beans & legumes','Nuts & seeds','Oils, sauces & sweets'];
+const STARTER=[
+/* Protein */
+['chicken_breast_raw','Chicken breast, raw (skinless)','Protein',120,22.5,0,2.6],
+['chicken_breast_ckd','Chicken breast, cooked','Protein',165,31,0,3.6],
+['chicken_thigh_raw','Chicken thigh, raw (skinless)','Protein',121,19.7,0,4.1],
+['chicken_thigh_ckd','Chicken thigh, cooked','Protein',179,24.8,0,8.2],
+['ground_beef_90_raw','Ground beef 90% lean, raw','Protein',176,20,0,10],
+['ground_beef_90_ckd','Ground beef 90% lean, cooked','Protein',217,26.1,0,11.7],
+['ground_beef_80_raw','Ground beef 80% lean, raw','Protein',254,17.2,0,20],
+['ground_beef_80_ckd','Ground beef 80% lean, cooked (drained)','Protein',246,23.5,0,16.2],
+['ground_turkey_raw','Ground turkey 93% lean, raw','Protein',150,18.7,0,8.3],
+['ground_turkey_ckd','Ground turkey 93% lean, cooked','Protein',176,22.9,0,9.2],
+['steak_sirloin_raw','Sirloin steak, raw (trimmed)','Protein',142,21.6,0,5.6],
+['steak_sirloin_ckd','Sirloin steak, cooked','Protein',183,27,0,7.6],
+['pork_tenderloin_raw','Pork tenderloin, raw','Protein',109,20.7,0,2.2],
+['pork_tenderloin_ckd','Pork tenderloin, cooked','Protein',143,26,0,3.5],
+['bacon_ckd','Bacon, cooked','Protein',541,37,1.4,42],
+['deli_turkey','Deli turkey breast','Protein',104,17,3.5,2],
+['tofu_firm','Tofu, firm','Protein',88,10,2,5],
+['tempeh','Tempeh','Protein',192,20,8,11],
+['whey_protein','Whey protein powder','Protein',375,75,12.5,6],
+/* Fish & seafood */
+['salmon_raw','Salmon, raw (Atlantic)','Fish & seafood',208,20.4,0,13.4],
+['salmon_ckd','Salmon, cooked','Fish & seafood',206,22.1,0,12.4],
+['tuna_canned','Tuna, canned in water (drained)','Fish & seafood',116,25.5,0,0.8],
+['cod_raw','Cod, raw','Fish & seafood',82,17.8,0,0.7],
+['cod_ckd','Cod, cooked','Fish & seafood',105,22.8,0,0.9],
+['tilapia_raw','Tilapia, raw','Fish & seafood',96,20.1,0,1.7],
+['tilapia_ckd','Tilapia, cooked','Fish & seafood',128,26.2,0,2.7],
+['shrimp_ckd','Shrimp, cooked','Fish & seafood',99,24,0.2,0.3],
+['canned_salmon','Salmon, canned (drained)','Fish & seafood',167,23.5,0,7.5],
+/* Dairy & eggs */
+['egg_whole','Egg, whole (1 large ≈ 50 g)','Dairy & eggs',143,12.6,0.7,9.5],
+['egg_white','Egg whites','Dairy & eggs',52,10.9,0.7,0.2],
+['greek_yogurt_0','Greek yogurt, 0%','Dairy & eggs',59,10.3,3.6,0.4],
+['greek_yogurt_2','Greek yogurt, 2%','Dairy & eggs',73,9.9,3.9,1.9],
+['yogurt_plain','Yogurt, plain (3%)','Dairy & eggs',61,3.5,4.7,3.3],
+['cottage_2','Cottage cheese, 2%','Dairy & eggs',84,11,4.3,2.3],
+['milk_skim','Milk, skim','Dairy & eggs',34,3.4,5,0.1],
+['milk_2','Milk, 2%','Dairy & eggs',50,3.3,4.8,2],
+['milk_whole','Milk, whole (3.25%)','Dairy & eggs',61,3.2,4.8,3.3],
+['cheddar','Cheddar cheese','Dairy & eggs',403,24.9,1.3,33.1],
+['mozzarella_ps','Mozzarella, part-skim','Dairy & eggs',254,24.3,3,15.9],
+['parmesan','Parmesan, grated','Dairy & eggs',431,38.5,4.1,28.6],
+['feta','Feta cheese','Dairy & eggs',264,14.2,4.1,21.3],
+['cream_cheese','Cream cheese','Dairy & eggs',342,5.9,4.1,34],
+['butter','Butter','Dairy & eggs',717,0.9,0.1,81],
+['heavy_cream','Cream, 35% (whipping)','Dairy & eggs',340,2.8,2.8,36],
+['sour_cream','Sour cream, 14%','Dairy & eggs',181,2.4,4.6,17],
+/* Vegetables */
+['bell_pepper','Bell pepper','Vegetables',28,1,6,0.3],
+['onion','Onion','Vegetables',40,1.1,9.3,0.1],
+['garlic','Garlic','Vegetables',149,6.4,33,0.5],
+['tomato','Tomato','Vegetables',18,0.9,3.9,0.2],
+['cucumber','Cucumber','Vegetables',15,0.7,3.6,0.1],
+['carrot','Carrot','Vegetables',41,0.9,9.6,0.2],
+['broccoli','Broccoli, raw','Vegetables',34,2.8,6.6,0.4],
+['cauliflower','Cauliflower, raw','Vegetables',25,1.9,5,0.3],
+['zucchini','Zucchini','Vegetables',17,1.2,3.1,0.3],
+['spinach','Spinach, raw','Vegetables',23,2.9,3.6,0.4],
+['kale','Kale, raw','Vegetables',35,2.9,4.4,1.5],
+['lettuce_romaine','Lettuce, romaine','Vegetables',17,1.2,3.3,0.3],
+['mushrooms','Mushrooms, white','Vegetables',22,3.1,3.3,0.3],
+['sweet_potato_raw','Sweet potato, raw','Vegetables',86,1.6,20.1,0.1],
+['sweet_potato_ckd','Sweet potato, baked','Vegetables',90,2,20.7,0.2],
+['potato_raw','Potato, raw','Vegetables',77,2,17.5,0.1],
+['potato_ckd','Potato, baked (with skin)','Vegetables',93,2.5,21.2,0.1],
+['green_beans','Green beans','Vegetables',31,1.8,7,0.2],
+['asparagus','Asparagus','Vegetables',20,2.2,3.9,0.1],
+['brussels','Brussels sprouts, raw','Vegetables',43,3.4,9,0.3],
+['cabbage','Cabbage','Vegetables',25,1.3,5.8,0.1],
+['celery','Celery','Vegetables',14,0.7,3,0.2],
+['corn','Corn kernels','Vegetables',86,3.3,19,1.4],
+['peas','Green peas, frozen','Vegetables',77,5.2,13.7,0.4],
+['squash_butternut','Butternut squash','Vegetables',45,1,11.7,0.1],
+['beets','Beets, raw','Vegetables',43,1.6,9.6,0.2],
+['avocado','Avocado','Vegetables',160,2,8.5,14.7],
+['edamame','Edamame, shelled','Vegetables',121,12,8.9,5.2],
+/* Fruits */
+['apple','Apple','Fruits',52,0.3,13.8,0.2],
+['banana','Banana','Fruits',89,1.1,22.8,0.3],
+['orange','Orange','Fruits',47,0.9,11.8,0.1],
+['strawberries','Strawberries','Fruits',32,0.7,7.7,0.3],
+['blueberries','Blueberries','Fruits',57,0.7,14.5,0.3],
+['raspberries','Raspberries','Fruits',52,1.2,11.9,0.7],
+['blackberries','Blackberries','Fruits',43,1.4,9.6,0.5],
+['grapes','Grapes','Fruits',69,0.7,18.1,0.2],
+['watermelon','Watermelon','Fruits',30,0.6,7.6,0.2],
+['cantaloupe','Cantaloupe','Fruits',34,0.8,8.2,0.2],
+['pineapple','Pineapple','Fruits',50,0.5,13.1,0.1],
+['mango','Mango','Fruits',60,0.8,15,0.4],
+['peach','Peach','Fruits',39,0.9,9.5,0.3],
+['pear','Pear','Fruits',57,0.4,15.2,0.1],
+['kiwi','Kiwi','Fruits',61,1.1,14.7,0.5],
+['cherries','Cherries','Fruits',63,1.1,16,0.2],
+['lemon','Lemon','Fruits',29,1.1,9.3,0.3],
+['dates','Dates, Medjool','Fruits',277,1.8,75,0.2],
+['raisins','Raisins','Fruits',299,3.1,79.2,0.5],
+['dried_cranberries','Dried cranberries','Fruits',308,0.1,82,1.4],
+/* Grains & starches */
+['rice_white_dry','White rice, dry','Grains & starches',365,7.1,80,0.7],
+['rice_white_ckd','White rice, cooked','Grains & starches',130,2.7,28.2,0.3],
+['rice_brown_dry','Brown rice, dry','Grains & starches',370,7.9,77.2,2.9],
+['rice_brown_ckd','Brown rice, cooked','Grains & starches',123,2.7,25.6,1],
+['quinoa_dry','Quinoa, dry','Grains & starches',368,14.1,64.2,6.1],
+['quinoa_ckd','Quinoa, cooked','Grains & starches',120,4.4,21.3,1.9],
+['pasta_dry','Pasta, dry','Grains & starches',371,13,74.7,1.5],
+['pasta_ckd','Pasta, cooked','Grains & starches',158,5.8,30.9,0.9],
+['pasta_ww_dry','Whole wheat pasta, dry','Grains & starches',348,14.6,75,1.4],
+['pasta_ww_ckd','Whole wheat pasta, cooked','Grains & starches',124,5.3,26.5,0.5],
+['oats_dry','Oats, rolled (dry)','Grains & starches',379,13.2,67.7,6.5],
+['couscous_dry','Couscous, dry','Grains & starches',376,12.8,77.4,0.6],
+['couscous_ckd','Couscous, cooked','Grains & starches',112,3.8,23.2,0.2],
+['barley_ckd','Barley, pearled, cooked','Grains & starches',123,2.3,28.2,0.4],
+['bread_white','Bread, white','Grains & starches',265,9,49,3.2],
+['bread_ww','Bread, whole wheat','Grains & starches',247,13,41,3.4],
+['tortilla_flour','Tortilla, flour','Grains & starches',306,8.2,49,7.7],
+['bagel','Bagel, plain','Grains & starches',257,10.2,50.5,1.7],
+/* Beans & legumes */
+['lentils_dry','Lentils, dry','Beans & legumes',352,24.6,63.4,1.1],
+['lentils_ckd','Lentils, cooked','Beans & legumes',116,9,20.1,0.4],
+['chickpeas_ckd','Chickpeas, cooked/canned (drained)','Beans & legumes',164,8.9,27.4,2.6],
+['black_beans_ckd','Black beans, cooked (drained)','Beans & legumes',132,8.9,23.7,0.5],
+['kidney_beans_ckd','Kidney beans, cooked (drained)','Beans & legumes',127,8.7,22.8,0.5],
+/* Nuts & seeds */
+['almonds','Almonds','Nuts & seeds',579,21.2,21.6,49.9],
+['peanuts','Peanuts','Nuts & seeds',567,25.8,16.1,49.2],
+['peanut_butter','Peanut butter','Nuts & seeds',588,25,20,50],
+['almond_butter','Almond butter','Nuts & seeds',614,21,18.8,55.5],
+['walnuts','Walnuts','Nuts & seeds',654,15.2,13.7,65.2],
+['cashews','Cashews','Nuts & seeds',553,18.2,30.2,43.8],
+['pistachios','Pistachios, shelled','Nuts & seeds',560,20.2,27.2,45.3],
+['pecans','Pecans','Nuts & seeds',691,9.2,13.9,72],
+['chia','Chia seeds','Nuts & seeds',486,16.5,42.1,30.7],
+['flax','Flax seeds, ground','Nuts & seeds',534,18.3,28.9,42.2],
+['pumpkin_seeds','Pumpkin seeds','Nuts & seeds',559,30.2,10.7,49],
+['sunflower_seeds','Sunflower seeds','Nuts & seeds',584,20.8,20,51.5],
+['hemp_hearts','Hemp hearts','Nuts & seeds',553,31.6,8.7,48.8],
+/* Oils, sauces & sweets */
+['olive_oil','Olive oil','Oils, sauces & sweets',884,0,0,100],
+['canola_oil','Canola oil','Oils, sauces & sweets',884,0,0,100],
+['coconut_oil','Coconut oil','Oils, sauces & sweets',862,0,0,100],
+['mayo','Mayonnaise','Oils, sauces & sweets',680,1,0.6,75],
+['honey','Honey','Oils, sauces & sweets',304,0.3,82.4,0],
+['maple_syrup','Maple syrup','Oils, sauces & sweets',260,0,67,0.1],
+['sugar','Sugar, white','Oils, sauces & sweets',387,0,100,0],
+['jam','Jam / fruit spread','Oils, sauces & sweets',278,0.4,68.9,0.1],
+['ketchup','Ketchup','Oils, sauces & sweets',101,1,27.4,0.1],
+['sriracha','Sriracha','Oils, sauces & sweets',93,2,19,1],
+['soy_sauce','Soy sauce','Oils, sauces & sweets',53,8.1,4.9,0.6],
+['bbq_sauce','BBQ sauce','Oils, sauces & sweets',172,0.8,40.8,0.6],
+['hummus','Hummus','Oils, sauces & sweets',166,7.9,14.3,9.6],
+['salsa','Salsa','Oils, sauces & sweets',36,1.5,7,0.2],
+['dark_chocolate','Dark chocolate, 70%','Oils, sauces & sweets',598,7.8,45.9,42.6],
+['cocoa','Cocoa powder','Oils, sauces & sweets',228,19.6,57.9,13.7]
+].map(function(a){return {id:'s_'+a[0],name:a[1],cat:a[2],baseG:100,cal:a[3],p:a[4],c:a[5],f:a[6]};});
+function findFood(id){return S.foods.find(function(x){return x.id===id;})||STARTER.find(function(x){return x.id===id;});}
+
 
 /* ---------- dates ---------- */
 let viewDate=new Date();
@@ -407,7 +567,7 @@ function renderFoods(){
   document.getElementById('foodList').innerHTML=foods.length?foods.map(f=>
     '<div class="frow"><div><div class="fname">'+esc(f.name)+'</div><div class="fsub">'+r0(f.cal)+' kcal · P '+r1(f.p)+' · C '+r1(f.c)+' · F '+r1(f.f)+' per '+r0(f.baseG)+' g</div></div>'+
     '<div class="facts"><button class="btn sm" onclick="uiLogFood(\''+f.id+'\')">Log</button><button class="btn sm sec" onclick="uiNewFood(\''+f.id+'\')">Edit</button></div></div>'
-  ).join(''):'<div class="empty">'+(q?'No foods match that search.':'No foods saved yet. Scan a label or add one manually.')+'</div>';
+  ).join(''):'<div class="empty">'+(q?'No foods match that search.':'No foods saved yet. Scan a label, add one manually, or pull from the starter library below.')+'</div>';
   const recipes=S.recipes.filter(r=>r.name.toLowerCase().includes(q));
   document.getElementById('recipeList').innerHTML=recipes.length?recipes.map(r=>{
     const per=portionMacros(r);
@@ -422,18 +582,27 @@ function portionMacros(r){
 
 /* ----- log a food by grams ----- */
 function uiPickFood(){
-  if(!S.foods.length){modal(pickEmpty('food'));return;}
-  modal('<h3>Log a food</h3><input type="search" id="pfSearch" placeholder="Search…" oninput="pfFilter()">'+
-    '<div id="pfList" style="margin-top:8px">'+pfRows(S.foods)+'</div>');
+  modal('<h3>Log a food</h3><input type="search" id="pfSearch" placeholder="Search my foods + library…" oninput="pfFilter()">'+
+    '<div id="pfList" style="margin-top:8px"></div>');
+  pfFilter();
+  setTimeout(()=>document.getElementById('pfSearch').focus(),60);
 }
-function pfRows(foods){return foods.map(f=>'<button class="action" onclick="uiLogFood(\''+f.id+'\')"><span>'+esc(f.name)+'<span class="sub">'+r0(f.cal)+' kcal per '+r0(f.baseG)+' g</span></span></button>').join('')||'<div class="empty">No match.</div>';}
-function pfFilter(){const q=document.getElementById('pfSearch').value.toLowerCase();document.getElementById('pfList').innerHTML=pfRows(S.foods.filter(f=>f.name.toLowerCase().includes(q)));}
+function pfRow(f){return '<button class="action" onclick="uiLogFood(\''+f.id+'\')"><span>'+esc(f.name)+'<span class="sub">'+r0(f.cal)+' kcal · P '+r1(f.p)+' · C '+r1(f.c)+' · F '+r1(f.f)+' per '+r0(f.baseG)+' g</span></span></button>';}
+function pfFilter(){
+  const q=(document.getElementById('pfSearch').value||'').toLowerCase();
+  const mine=S.foods.filter(f=>f.name.toLowerCase().includes(q));
+  const lib=STARTER.filter(f=>f.name.toLowerCase().includes(q));
+  let out='';
+  if(mine.length)out+='<p class="small muted" style="margin:8px 0 2px">My foods</p>'+mine.map(pfRow).join('');
+  if(lib.length)out+='<p class="small muted" style="margin:14px 0 2px">Starter library</p>'+lib.map(pfRow).join('');
+  document.getElementById('pfList').innerHTML=out||'<div class="empty">No match anywhere. Scan its label or add it manually from the Foods tab.</div>';
+}
 function pickEmpty(kind){
   return '<h3>Nothing saved yet</h3><p class="small muted">'+(kind==='food'?'Scan a label or add a food manually first — then logging it takes two taps.':'Build a meal or prep first, then log portions of it any day.')+'</p>'+
   '<div class="btnrow">'+(kind==='food'?'<button class="btn" onclick="uiScan()">Scan a label</button><button class="btn sec" onclick="uiNewFood()">Add manually</button>':'<button class="btn" onclick="uiNewRecipe()">Build one now</button>')+'</div>';
 }
 function uiLogFood(id){
-  const f=S.foods.find(x=>x.id===id);if(!f)return;
+  const f=findFood(id);if(!f)return;
   modal('<h3>'+esc(f.name)+'</h3><p class="small muted" style="margin:0">'+r0(f.cal)+' kcal · P '+r1(f.p)+' · C '+r1(f.c)+' · F '+r1(f.f)+' per '+r0(f.baseG)+' g</p>'+
     '<label class="fl">How many grams?</label><input type="number" id="lfG" inputmode="decimal" value="'+r0(f.baseG)+'" oninput="lfPreview(\''+f.id+'\')">'+
     '<p class="totline" id="lfOut"></p>'+
@@ -442,9 +611,9 @@ function uiLogFood(id){
   setTimeout(()=>{const i=document.getElementById('lfG');i.focus();i.select();},60);
 }
 function lfCalc(f){const g=parseFloat(document.getElementById('lfG').value)||0;const k=f.baseG?g/f.baseG:0;return {g,cal:f.cal*k,p:f.p*k,c:f.c*k,f:f.f*k};}
-function lfPreview(id){const f=S.foods.find(x=>x.id===id);if(!f)return;const v=lfCalc(f);
+function lfPreview(id){const f=findFood(id);if(!f)return;const v=lfCalc(f);
   document.getElementById('lfOut').innerHTML='= <b>'+r0(v.cal)+'</b> kcal · P <b>'+r1(v.p)+'</b> · C <b>'+r1(v.c)+'</b> · F <b>'+r1(v.f)+'</b>';}
-function lfSave(id){const f=S.foods.find(x=>x.id===id);if(!f)return;const v=lfCalc(f);
+function lfSave(id){const f=findFood(id);if(!f)return;const v=lfCalc(f);
   if(v.g<=0){alert('Enter the grams you weighed out.');return;}
   addEntry({name:f.name,detail:r0(v.g)+' g',cal:v.cal,p:v.p,c:v.c,f:v.f});}
 
@@ -473,6 +642,33 @@ function lrSave(id){const r=S.recipes.find(x=>x.id===id);if(!r)return;
   const per=portionMacros(r);
   addEntry({name:r.name,detail:q+(q===1?' portion':' portions'),cal:per.cal*q,p:per.p*q,c:per.c*q,f:per.f*q});}
 
+
+/* ----- starter library browser ----- */
+function uiLibrary(){
+  modal('<h3>Starter library</h3><p class="small muted" style="margin:0 0 10px">'+STARTER.length+' everyday foods with typical per-100 g values from standard nutrition databases (USDA / Canadian Nutrient File). Log straight from here, or save one to My foods if you want to tweak its numbers.</p>'+
+    '<input type="search" id="libSearch" placeholder="Search the library…" oninput="libFilter()">'+
+    '<select id="libCat" style="margin-top:8px" onchange="libFilter()"><option value="">All categories</option>'+CATS.map(c=>'<option>'+c+'</option>').join('')+'</select>'+
+    '<div id="libList" style="margin-top:8px"></div>');
+  libFilter();
+}
+function libFilter(){
+  const q=(document.getElementById('libSearch').value||'').toLowerCase();
+  const cat=document.getElementById('libCat').value;
+  const rows=STARTER.filter(f=>(!cat||f.cat===cat)&&f.name.toLowerCase().includes(q));
+  document.getElementById('libList').innerHTML=rows.map(f=>{
+    const saved=S.foods.some(x=>x.starterId===f.id);
+    return '<div class="frow"><div><div class="fname">'+esc(f.name)+'</div><div class="fsub">'+r0(f.cal)+' kcal · P '+r1(f.p)+' · C '+r1(f.c)+' · F '+r1(f.f)+' per 100 g</div></div>'+
+      '<div class="facts"><button class="btn sm" onclick="uiLogFood(\''+f.id+'\')">Log</button>'+
+      '<button class="btn sm sec" '+(saved?'disabled':'onclick="copyStarter(\''+f.id+'\',this)"')+'>'+(saved?'Saved ✓':'Save')+'</button></div></div>';
+  }).join('')||'<div class="empty">Nothing in the library matches that.</div>';
+}
+function copyStarter(id,btn){
+  const f=STARTER.find(x=>x.id===id);if(!f)return;
+  if(S.foods.some(x=>x.starterId===id))return;
+  S.foods.push({id:uid(),starterId:id,name:f.name,baseG:100,cal:f.cal,p:f.p,c:f.c,f:f.f});
+  save();
+  if(btn){btn.textContent='Saved ✓';btn.disabled=true;}
+}
 /* ----- new / edit food ----- */
 function uiNewFood(id,prefill){
   const f=id?S.foods.find(x=>x.id===id):null;
@@ -560,16 +756,17 @@ function rbRenderIngs(){
   el.innerHTML=rbIngs.map((ing,i)=>
     '<div class="ingrow"><select onchange="rbIngs['+i+'].foodId=this.value;rbCalcTot()">'+
     '<option value="">Choose a food…</option>'+
-    S.foods.map(f=>'<option value="'+f.id+'"'+(ing.foodId===f.id?' selected':'')+'>'+esc(f.name)+'</option>').join('')+
+    (S.foods.length?'<optgroup label="My foods">'+S.foods.map(f=>'<option value="'+f.id+'"'+(ing.foodId===f.id?' selected':'')+'>'+esc(f.name)+'</option>').join('')+'</optgroup>':'')+
+    '<optgroup label="Starter library">'+STARTER.map(f=>'<option value="'+f.id+'"'+(ing.foodId===f.id?' selected':'')+'>'+esc(f.name)+'</option>').join('')+'</optgroup>'+
     '</select><input type="number" inputmode="decimal" placeholder="g" value="'+esc(ing.g)+'" oninput="rbIngs['+i+'].g=this.value;rbCalcTot()">'+
     '<button onclick="rbIngs.splice('+i+',1);rbRenderIngs()" aria-label="Remove ingredient">✕</button></div>'
-  ).join('')+(S.foods.length?'':'<p class="small muted">You have no saved foods yet — scan a few labels first, or switch to "Enter totals".</p>');
+  ).join('')+'';
   rbCalcTot();
 }
 function rbAddIng(){rbIngs.push({foodId:'',g:''});rbRenderIngs();}
 function rbIngTotals(){
   return rbIngs.reduce((a,ing)=>{
-    const f=S.foods.find(x=>x.id===ing.foodId);const g=parseFloat(ing.g)||0;
+    const f=findFood(ing.foodId);const g=parseFloat(ing.g)||0;
     if(!f||!g||!f.baseG)return a;const k=g/f.baseG;
     return {cal:a.cal+f.cal*k,p:a.p+f.p*k,c:a.c+f.c*k,f:a.f+f.f*k};
   },{cal:0,p:0,c:0,f:0});
