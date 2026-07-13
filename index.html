@@ -254,6 +254,7 @@ label.fl{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margi
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
 <div class="sheet" id="addSheet">
   <h3>Add to today</h3>
+  <div id="recentSection"></div>
   <button class="action" onclick="uiScan()"><span class="ic" style="background:var(--green-soft);color:var(--green)"><svg viewBox="0 0 24 24"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M7 12h10"/></svg></span><span>Scan a nutrition label<span class="sub">Photo → auto-fill → quick check → saved</span></span></button>
   <button class="action" onclick="uiPickFood()"><span class="ic" style="background:var(--carbs-soft);color:var(--carbs)"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span><span>Log a food by grams<span class="sub">Your foods + built-in library of whole foods</span></span></button>
   <button class="action" onclick="uiPickRecipe()"><span class="ic" style="background:var(--protein-soft);color:var(--protein)"><svg viewBox="0 0 24 24"><path d="M4 11h16M6 11a6 6 0 0 1 12 0M9 8V6M12 7V5M15 8V6M4 11l1.5 8h13L20 11"/></svg></span><span>Log meal-prep portions<span class="sub">e.g. 1 portion = ⅕ of the batch</span></span></button>
@@ -264,7 +265,7 @@ label.fl{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margi
 
 <script>
 /* ---------- storage ---------- */
-const DEFAULT_STATE={settings:{targets:null,stats:null},foods:[],recipes:[],log:{}};
+const DEFAULT_STATE={settings:{targets:null,stats:null},foods:[],recipes:[],log:{},recentEntries:[]};
 let memStore=null;
 function load(){
   try{const raw=localStorage.getItem('macroScaleV1');return raw?JSON.parse(raw):JSON.parse(JSON.stringify(DEFAULT_STATE));}
@@ -464,7 +465,23 @@ function switchView(name){
 }
 
 /* ---------- sheet & modal ---------- */
-function openSheet(){document.getElementById('overlay').classList.add('show');document.getElementById('addSheet').classList.add('show');}
+function openSheet(){
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('addSheet').classList.add('show');
+  renderRecents();
+}
+function renderRecents(){
+  const el=document.getElementById('recentSection');
+  const recents=S.recentEntries||[];
+  if(!recents.length){el.innerHTML='';return;}
+  el.innerHTML='<p class="small muted" style="margin:0 0 8px">Quick repeat</p>'+
+    recents.slice(0,10).map((e,i)=>'<button class="action" onclick="repeatEntry('+i+')"><span>'+esc(e.name)+'<span class="sub">'+esc(e.detail)+' · '+r0(e.cal)+' kcal</span></span></button>').join('')+
+    '<p class="small muted" style="margin:12px 0 0">Recent items</p>';
+}
+function repeatEntry(i){
+  const e=S.recentEntries[i];if(!e)return;
+  addEntry({name:e.name,detail:e.detail,cal:e.cal,p:e.p,c:e.c,f:e.f});
+}
 function modal(html){
   closeSheetOnly();
   document.getElementById('overlay').classList.add('show');
@@ -556,7 +573,12 @@ function delEntry(key,id){
 function addEntry(entry){
   const key=ymd(viewDate);
   S.log[key]=S.log[key]||[];
-  S.log[key].push(Object.assign({id:uid()},entry));
+  const logEntry=Object.assign({id:uid()},entry);
+  S.log[key].push(logEntry);
+  // track for quick repeat (keep last 20)
+  S.recentEntries=S.recentEntries||[];
+  S.recentEntries.unshift({name:entry.name,detail:entry.detail,cal:entry.cal,p:entry.p,c:entry.c,f:entry.f});
+  if(S.recentEntries.length>20)S.recentEntries.pop();
   save();closeAll();switchView('today');
 }
 
