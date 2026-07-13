@@ -1,4 +1,4 @@
-const CACHE='macroscale-v2';
+const CACHE='macroscale-v3';
 const CORE=[
   './','./index.html','./manifest.json','./icon-192.png','./icon-512.png',
   'https://cdn.jsdelivr.net/fontsource/fonts/space-grotesk@latest/latin-500-normal.woff2',
